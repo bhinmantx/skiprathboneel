@@ -11,6 +11,7 @@ brendan.hinman@gmail.com
 #include <SPI.h>   // Comes with Arduino IDE
 #include "RF24.h"  // Download and Install (See above)
 #include "printf.h" // Needed for "printDetails" Takes up some memory
+#include "ELCOIL.h" // Needed for "printDetails" Takes up some memory
 /*-----( Declare Constants and Pin Numbers )-----*/
 #define  CE_PIN  9   // The pins to be used for CE and SN
 #define  CSN_PIN 10
@@ -33,10 +34,27 @@ boolean hasHardware = true;
   See http://www.cplusplus.com/doc/tutorial/structures/
 */
 struct dataStruct {
-  bool switchOn;          // Mode 1 switch
-  bool switchOn2;          // Mode 2 switch
+  uint8_t switchOn;          // Mode 1 switch
+  uint8_t switchOn2;          // Mode 2 switch
 } myData;                 //
 
+  uint8_t prevMode;
+  uint8_t currMode;
+  ELCOIL redRightArm(2,0);
+  ELCOIL greenRightArm(3,0);
+  ELCOIL redLeftArm(4,1);
+  ELCOIL greenLeftArm(5,1);
+
+  //Looks like we're going to need to split the EL cables such that they go up and down the legs. Not enough channels for full control of each limb plus anything else. 
+  //Do we want something else? A white EL line? 
+  //We could setup another separate line entirely with its own power supply. It'd be manual. Ugly! Interesting idea though. 
+    
+  ELCOIL redRightLeg(6,2);
+  ELCOIL greenRightLeg(7,2);
+  ELCOIL redLeftLeg(8,3);
+  ELCOIL greenLeftLeg(9,3);
+
+ELCOIL coils[8] = {redRightArm, greenRightArm, redLeftArm, greenLeftArm, redRightLeg, greenRightLeg, redLeftLeg, greenLeftLeg};
 
 void setup()   /****** SETUP: RUNS ONCE ******/
 {
@@ -45,7 +63,7 @@ void setup()   /****** SETUP: RUNS ONCE ******/
   Serial.println(F("Starting up the receiver!"));  
   //printf_begin(); // Needed for "printDetails" Takes up some memory
 
-
+/*
   pinMode(2, OUTPUT);  // channel A  
   pinMode(3, OUTPUT);  // channel B   
   pinMode(4, OUTPUT);  // channel C
@@ -54,8 +72,10 @@ void setup()   /****** SETUP: RUNS ONCE ******/
   pinMode(7, OUTPUT);  // channel F
   pinMode(8, OUTPUT);  // channel G
   pinMode(9, OUTPUT);  // channel H
+*/
 
-
+  prevMode = 0;
+  currMode = 1;
   radio.begin();          // Initialize the nRF24L01 Radio
   radio.setChannel(108);  // 2.508 Ghz - Above most Wifi Channels
   radio.setDataRate(RF24_250KBPS); // Fast enough.. Better range
@@ -76,7 +96,6 @@ void setup()   /****** SETUP: RUNS ONCE ******/
 //  radio.printDetails(); //Uncomment to show LOTS of debugging information
 }//--(end setup )---
 
-
 void loop()   /****** LOOP: RUNS CONSTANTLY ******/
 {
 
@@ -94,8 +113,14 @@ void loop()   /****** LOOP: RUNS CONSTANTLY ******/
     radio.startListening();                              // Now, resume listening so we catch the next packets.
 
     Serial.print(F("Packet Received - Sent response "));  // Print the received packet data
-    digitalWrite(2, LOW);
-    digitalWrite(3,LOW);
+
+    currMode = myData.switchOn;
+
+/*
+
+
+
+    
     if ( myData.switchOn == 1)
     {    
       digitalWrite(2, HIGH);
@@ -119,15 +144,92 @@ void loop()   /****** LOOP: RUNS CONSTANTLY ******/
       digitalWrite(3,LOW);      
       digitalWrite(4,LOW);      
     }
-
+*/
   } // END radio available
 
 
-if (myData.switchOn == myData.switchOn2 == 0){
-  digitalWrite(7,HIGH);      
-}else {
-      digitalWrite(7,LOW);      
+
+if (currMode != prevMode) {
+  
+    for (uint8_t i = 0; i <= 8; i++) {
+      coils[i].off();
+    }
+    prevMode = currMode;
 }
+
+
+/*
+1 All green on (2 - 4 coils) "good skip"
+2 All red on (2 - 4 coils) "bad skip"
+3 Red and Green on both sides "double"
+4 Red on left, green on right "split"
+5 Red on right, green on left "r_split"
+6 all red distress flash "red_distress"
+7 all green distress flash "green_distress"
+8 green/red distress flash "double_distress"
+9 All coils on with potentially an extra color ///means we have to split some channels up and down leg. Redundancy says we make it one color on one side and another color on the other. 
+10 All coils off
+*/
+
+switch (myData.switchOn) {
+    case 1:
+      //1 All green on (2 - 4 coils) "good skip"
+       greenRightArm.on();
+       greenLeftArm.on();
+       greenRightLeg.on();
+       greenLeftLeg.on();
+      break;
+    case 2:
+       redRightArm.on();
+       redLeftArm.on();
+       redRightLeg.on();
+       redLeftLeg.on();
+      break;
+    case 3:
+    for (uint8_t i = 0; i <= 8; i++) {
+      coils[i].on();
+    }
+    break;
+    case 4:
+       redLeftLeg.on();
+       redLeftArm.on();
+       greenRightLeg.on();
+       greenRightArm.on();
+    break;
+    case 5:
+       greenLeftArm.on();
+       greenLeftLeg.on();
+       redRightArm.on();
+       redRightLeg.on();
+    break;
+    case 6:
+       redRightArm.dFlash();
+       redLeftArm.dFlash();
+       redRightLeg.dFlash();
+       redLeftLeg.dFlash();
+    break;
+    case 7:
+       greenRightArm.dFlash();
+       greenLeftArm.dFlash();
+       greenRightLeg.dFlash();
+       greenLeftLeg.dFlash();
+    break;
+    case 8:
+       redRightArm.dFlash();
+       redLeftArm.dFlash();
+       redRightLeg.dFlash();
+       redLeftLeg.dFlash();
+       greenRightArm.dFlash();
+       greenLeftArm.dFlash();
+       greenRightLeg.dFlash();
+       greenLeftLeg.dFlash();
+    break;  
+    default:   
+      
+    break;
+  }
+
+
  /* if (hasHardware)
   {
     

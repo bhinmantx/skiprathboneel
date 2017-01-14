@@ -41,6 +41,7 @@ unsigned long timeNow;  // Used to grab the current time, calculate delays
 unsigned long started_waiting_at;
 boolean timeout;       // Timeout? True or False
 uint8_t counter;   //For auto swapping modes
+uint8_t mode;   //For auto swapping modes
 //boolean hasHardware = false;
 boolean hasHardware = true;
 
@@ -51,8 +52,8 @@ boolean hasHardware = true;
 */
 struct dataStruct {
  // unsigned long _micros;  // to save response times
-  bool switchOn;          // The Joystick push-down switch
-  bool switchOn2;          // The Joystick push-down switch
+  uint8_t switchOn;          // The Joystick push-down switch
+  uint8_t switchOn2;          // The Joystick push-down switch
 } myData;                 // This can be accessed in the form:  myData.Xposition  etc.
 
 
@@ -86,6 +87,7 @@ void setup()   /****** SETUP: RUNS ONCE ******/
   // Start the radio listening for data
   radio.startListening();
 counter = 0;
+mode = 0;
 //  radio.printDetails(); //Uncomment to show LOTS of debugging information
 }//--(end setup )---
 
@@ -97,23 +99,22 @@ void loop()   /****** LOOP: RUNS CONSTANTLY ******/
   if (hasHardware)  // Set in variables at top
   {
     /*********************( Read the Joystick positions )*************************/
-    myData.switchOn  = !digitalRead(MODE1_SW);  // Invert the pulldown switch
-    myData.switchOn2  = !digitalRead(MODE2_SW);  // Invert the pulldown switch
+  //  myData.switchOn  = !digitalRead(MODE1_SW);  // Invert the pulldown switch
+   // myData.switchOn2  = !digitalRead(MODE2_SW);  // Invert the pulldown switch
 
-if (counter <= 10) {
-  myData.switchOn = false;
-  myData.switchOn2 = true;
-} else {
-  myData.switchOn = true;
-  myData.switchOn2 = false;
+
+
+if (counter >= 10) {
+    counter = 0;
+    mode++;
 }
- 
-  }
-  else
-  {
-  myData.switchOn = true;
-  myData.switchOn2 = false;
-  }
+if (mode > 8) {
+  mode = 0;
+}
+
+myData.switchOn = mode;
+  
+
 
  // myData._micros = micros();  // Send back for timing  //been having some issues with microseconds. Something about the difference between lilly pad and the uno
 
@@ -175,17 +176,11 @@ if (counter <= 10) {
     //Serial.print(F(", Round-trip delay "));
   //  Serial.print(timeNow - myData._micros);
     //Serial.println(F(" microseconds "));
- 
-
-
   }
    counter++;
-  if (counter >= 20) {
-    counter = 0;
-  }
   // Send again after delay. When working OK, change to something like 100
   delay(600);
-
+  }
 }//--(end main loop )---
 
 /*-----( Declare User-written Functions )-----*/
