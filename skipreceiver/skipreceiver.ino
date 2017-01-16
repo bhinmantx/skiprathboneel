@@ -73,7 +73,7 @@ void setup()   /****** SETUP: RUNS ONCE ******/
   pinMode(8, OUTPUT);  // channel G
   pinMode(9, OUTPUT);  // channel H
 */
-
+ greenRightArm.on();
   prevMode = 0;
   currMode = 1;
   radio.begin();          // Initialize the nRF24L01 Radio
@@ -112,8 +112,9 @@ void loop()   /****** LOOP: RUNS CONSTANTLY ******/
     radio.write( &myData, sizeof(myData) );              // Send the received data back.
     radio.startListening();                              // Now, resume listening so we catch the next packets.
 
-    Serial.print(F("Packet Received - Sent response "));  // Print the received packet data
-
+    Serial.println(F("Packet Received - Sent response "));  // Print the received packet data
+    Serial.print("here is the mode from that packet!");
+    Serial.println(myData.switchOn);
     currMode = myData.switchOn;
 
 /*
@@ -155,6 +156,7 @@ if (currMode != prevMode) {
       coils[i].off();
     }
     prevMode = currMode;
+    Serial.println("mode changed!");
 }
 
 
@@ -174,18 +176,21 @@ if (currMode != prevMode) {
 switch (myData.switchOn) {
     case 1:
       //1 All green on (2 - 4 coils) "good skip"
+    
        greenRightArm.on();
        greenLeftArm.on();
        greenRightLeg.on();
        greenLeftLeg.on();
       break;
     case 2:
+    
        redRightArm.on();
        redLeftArm.on();
        redRightLeg.on();
        redLeftLeg.on();
       break;
     case 3:
+    
     for (uint8_t i = 0; i <= 8; i++) {
       coils[i].on();
     }

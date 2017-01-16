@@ -24,8 +24,13 @@ Pinout goes here
 #define  CSN_PIN 8
 #define  FEEDBACK 6
 
-#define MODE1_SW  A2  // The Joystick push-down switch, will be used as a Digital input
-#define MODE2_SW  A3  // The Joystick push-down switch, will be used as a Digital input
+#define MODE0_SW  A0  // The Joystick push-down switch, will be used as a Digital input
+#define MODE1_SW  A1  // The Joystick push-down switch, will be used as a Digital input
+#define MODE2_SW  A2  // The Joystick push-down switch, will be used as a Digital input
+#define MODE3_SW  A3  // The Joystick push-down switch, will be used as a Digital input
+#define MODE4_SW  A4  // The Joystick push-down switch, will be used as a Digital input
+#define MODE5_SW  A5  // The Joystick push-down switch, will be used as a Digital input
+
 
 #define ERRORPIN 3
 #define STATUSPIN 4 
@@ -63,8 +68,14 @@ void setup()   /****** SETUP: RUNS ONCE ******/
   // NOTE: The "F" in the print statements means "unchangable data; save in Flash Memory to conserve SRAM"
   Serial.println(F("Setting up the transmitter. Get ready!"));
   printf_begin(); // Needed for "printDetails" Takes up some memory
+  pinMode(MODE0_SW, INPUT_PULLUP);  // Pin A2 will be used as a digital input
   pinMode(MODE1_SW, INPUT_PULLUP);  // Pin A2 will be used as a digital input
   pinMode(MODE2_SW, INPUT_PULLUP);  // Pin A2 will be used as a digital input
+  pinMode(MODE3_SW, INPUT_PULLUP);  // Pin A2 will be used as a digital input
+  pinMode(MODE4_SW, INPUT_PULLUP);  // Pin A2 will be used as a digital input
+  pinMode(MODE5_SW, INPUT_PULLUP);  // Pin A2 will be used as a digital input
+  
+  
   pinMode(ERRORPIN, OUTPUT);  
   pinMode(STATUSPIN, OUTPUT); 
   pinMode(FEEDBACK, OUTPUT);
@@ -77,7 +88,7 @@ void setup()   /****** SETUP: RUNS ONCE ******/
   // getting_started sketch, and the likelihood of close proximity of the devices. RF24_PA_MAX is default.
   // PALevelcan be one of four levels: RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH and RF24_PA_MAX
   //radio.setPALevel(RF24_PA_LOW);
-   radio.setPALevel(RF24_PA_MAX);
+  radio.setPALevel(RF24_PA_MAX);
  
 
   // Open a writing and reading pipe on each radio, with opposite addresses
@@ -99,19 +110,37 @@ void loop()   /****** LOOP: RUNS CONSTANTLY ******/
   if (hasHardware)  // Set in variables at top
   {
     /*********************( Read the Joystick positions )*************************/
-  //  myData.switchOn  = !digitalRead(MODE1_SW);  // Invert the pulldown switch
-   // myData.switchOn2  = !digitalRead(MODE2_SW);  // Invert the pulldown switch
+   bool switchZero  = !digitalRead(MODE0_SW);  // Invert the pulldown switch
+   bool switchOne  = !digitalRead(MODE1_SW);  // Invert the pulldown switch
+   bool switchTwo  = !digitalRead(MODE2_SW);  // Invert the pulldown switch
+   bool switchThree  = !digitalRead(MODE3_SW);  // Invert the pulldown switch
+   bool switchFour  = !digitalRead(MODE4_SW);  // Invert the pulldown switch
+   bool switchFive  = !digitalRead(MODE5_SW);  // Invert the pulldown switch   
 
+if (switchOne && switchZero){
+  mode = 5;  
+} else if (switchTwo && switchThree) {
+  mode = 6;
+}
 
-
-if (counter >= 10) {
+else if (switchZero) {
+  mode = 1;
+} else  if (switchOne) {
+  mode = 2;  
+} else  if (switchTwo) {
+  mode = 3;  
+} else  if (switchThree) {
+  mode = 4;  
+}
+/*
+if (counter >= 20) {
     counter = 0;
     mode++;
 }
-if (mode > 8) {
-  mode = 0;
+if (mode > 6) {
+  mode = 1;
 }
-
+*/
 myData.switchOn = mode;
   
 
@@ -177,7 +206,7 @@ myData.switchOn = mode;
   //  Serial.print(timeNow - myData._micros);
     //Serial.println(F(" microseconds "));
   }
-   counter++;
+ //  counter++;
   // Send again after delay. When working OK, change to something like 100
   delay(600);
   }
